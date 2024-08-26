@@ -1,12 +1,13 @@
 function formatXML(xmlString) {
-          // Replace newlines and tabs with a single space, then trim to remove leading/trailing spaces
-          let formatted = xmlString.replace(/\s+/g, ' ').trim();
-          
-          // Escape double quotes
-          formatted = formatted.replace(/"/g, '\\"');
-          
-          // Return the formatted string encapsulated in quotes for JSON compatibility
-          return `"${formatted}"`;
+          // Normalize newlines, then escape double quotes
+          let formatted = xmlString.replace(/[\r\n]+/g, '\\n') // Replace newlines with literal \n
+                                   .replace(/\s+/g, ' ')      // Condense spaces
+                                   .replace(/"/g, '\\"');      // Escape double quotes
+      
+          // Ensure we do not remove spaces between attributes and elements
+          formatted = formatted.replace(/> </g, '> <'); // Correct spacing between tags if needed
+      
+          return `"${formatted.trim()}"`;
       }
 xmlInput = `<?xml version="1.0" encoding="UTF-8"?>
 <Policy xmlns="urn:oasis:names:tc:xacml:3.0:core:schema:wd-17"
