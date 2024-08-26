@@ -10,3 +10,5 @@ const pipChaincode = require('./lib/pipChaincode');
 
 module.exports.PIPChaincode = pipChaincode;
 module.exports.contracts = [pipChaincode];
+
+

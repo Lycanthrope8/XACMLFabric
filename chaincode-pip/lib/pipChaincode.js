@@ -8,6 +8,10 @@ class PIPChaincode extends Contract {
         console.log('Initializing the PIP ledger with initial user roles');
         const initialUsers = [
             {
+                username: 'alice.smith',
+                role: ['management', 'admin', 'user']
+            },
+            {
                 username: 'john.doe',
                 role: ['admin', 'user']
             },
