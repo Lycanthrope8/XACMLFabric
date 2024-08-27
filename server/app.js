@@ -15,7 +15,6 @@ const cryptoPath = envOrDefault(
         __dirname,
         '..',
         '..',
-        '..',
         'test-network',
         'organizations',
         'peerOrganizations',
