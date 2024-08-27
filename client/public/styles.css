@@ -1,0 +1,13 @@
+body {
+font-family: Arial, sans-serif;
+}
+
+input, textarea {
+margin-bottom: 10px;
+display: block;
+}
+
+form {
+margin-bottom: 20px;
+}
+      

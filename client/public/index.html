@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hyperledger Fabric Interface</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <h1>Hyperledger Fabric Operations</h1>
+
+    <h2>Enforce Access Control</h2>
+    <form action="/enforce" method="post">
+        <input type="text" name="subject" placeholder="Subject" required>
+        <input type="text" name="action" placeholder="Action" required>
+        <input type="text" name="resource" placeholder="Resource" required>
+        <button type="submit">Enforce</button>
+    </form>
+
+    <h2>Evaluate Policy</h2>
+    <form action="/evaluate" method="post">
+        <input type="text" name="subject" placeholder="Subject" required>
+        <input type="text" name="action" placeholder="Action" required>
+        <input type="text" name="resource" placeholder="Resource" required>
+        <button type="submit">Evaluate</button>
+    </form>
+
+    <h2>Set Role</h2>
+    <form action="/setRole" method="post">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="text" name="roles" placeholder="Roles" required>
+        <button type="submit">Set Role</button>
+    </form>
+
+    <h2>Get Role</h2>
+    <form action="/getRole" method="post">
+        <input type="text" name="username" placeholder="Username" required>
+        <button type="submit">Get Role</button>
+    </form>
+
+    <h2>Add Policy</h2>
+    <form action="/addPolicy" method="post">
+        <input type="text" name="policyId" placeholder="Policy ID" required>
+        <textarea name="policyXml" placeholder="Policy XML" rows="4" required></textarea>
+        <button type="submit">Add Policy</button>
+    </form>
+
+    <h2>Get Policy</h2>
+    <form action="/getPolicy" method="post">
+        <input type="text" name="policyId" placeholder="Policy ID" required>
+        <button type="submit">Get Policy</button>
+    </form>
+
+    <h2>Get All Policies</h2>
+    <form action="/getAllPolicies" method="get">
+        <button type="submit">Get All Policies</button>
+    </form>
+
+</body>
+</html>
