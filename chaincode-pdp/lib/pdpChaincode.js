@@ -33,7 +33,7 @@ class PDPChaincode extends Contract {
     
 
     async evaluatePolicy(ctx, policy, request) {
-        console.log("Policy: ", JSON.stringify(policy, null, 2));
+        // console.log("Policy: ", JSON.stringify(policy, null, 2));
         const rules = policy.Policy.Rule;
         
         for (const rule of rules) {
@@ -48,8 +48,8 @@ class PDPChaincode extends Contract {
 
 
     async matchRule(ctx, policy, rule, request) {
-        console.log("Parsed Policy Object:", JSON.stringify(policy, null, 2));
-        console.log("Parsed Rule Object:", JSON.stringify(rule, null, 2));
+        // console.log("Parsed Policy Object:", JSON.stringify(policy, null, 2));
+        // console.log("Parsed Rule Object:", JSON.stringify(rule, null, 2));
     
         const rolesData = await this.getRolesFromPipChaincode(ctx.stub, request.subject);
         if (!rolesData) {
@@ -63,9 +63,9 @@ class PDPChaincode extends Contract {
         const actionMatches = policy.Target?.[0]?.Actions?.[0]?.Action?.[0]?.ActionMatch;
         const resourceMatches = policy.Target?.[0]?.Resources?.[0]?.Resource?.[0]?.ResourceMatch;
     
-        console.log("Subject Matches:", JSON.stringify(subjectMatches, null, 2));
-        console.log("Action Matches:", JSON.stringify(actionMatches, null, 2));
-        console.log("Resource Matches:", JSON.stringify(resourceMatches, null, 2));
+        // console.log("Subject Matches:", JSON.stringify(subjectMatches, null, 2));
+        // console.log("Action Matches:", JSON.stringify(actionMatches, null, 2));
+        // console.log("Resource Matches:", JSON.stringify(resourceMatches, null, 2));
     
         // Validate matches for Subjects, Actions, Resources
         const subjectMatch = subjectMatches?.some(sm =>

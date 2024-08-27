@@ -6,13 +6,12 @@
 
 const grpc = require('@grpc/grpc-js');
 const { connect, signers } = require('@hyperledger/fabric-gateway');
-const crypto = require('node:crypto');
-const fs = require('node:fs/promises');
-const path = require('node:path');
-const { TextDecoder } = require('node:util');
+const crypto = require('crypto');
+const fs = require('fs/promises');
+const path = require('path');
+const { TextDecoder } = require('util');
 
 const channelName = envOrDefault('CHANNEL_NAME', 'mychannel');
-const chaincodeName = envOrDefault('CHAINCODE_NAME', 'chaincodePEP');
 const mspId = envOrDefault('MSP_ID', 'Org1MSP');
 
 // Path to crypto materials.
@@ -71,37 +70,32 @@ const utf8Decoder = new TextDecoder();
 async function main() {
     displayInputParameters();
 
-    // The gRPC client connection should be shared by all Gateway connections to this endpoint.
     const client = await newGrpcConnection();
-
     const gateway = connect({
         client,
         identity: await newIdentity(),
         signer: await newSigner(),
-        // Default timeouts for different gRPC calls
-        evaluateOptions: () => {
-            return { deadline: Date.now() + 5000 }; // 5 seconds
-        },
-        endorseOptions: () => {
-            return { deadline: Date.now() + 15000 }; // 15 seconds
-        },
-        submitOptions: () => {
-            return { deadline: Date.now() + 5000 }; // 5 seconds
-        },
-        commitStatusOptions: () => {
-            return { deadline: Date.now() + 60000 }; // 1 minute
-        },
+        evaluateOptions: () => ({ deadline: Date.now() + 5000 }), // 5 seconds
+        endorseOptions: () => ({ deadline: Date.now() + 15000 }), // 15 seconds
+        submitOptions: () => ({ deadline: Date.now() + 5000 }), // 5 seconds
+        commitStatusOptions: () => ({ deadline: Date.now() + 60000 }) // 1 minute
     });
 
     try {
-        // Get a network instance representing the channel where the smart contract is deployed.
-        const network = gateway.getNetwork(channelName);
+        const pepContract = await getContractInstance(gateway, channelName, 'chaincodePEP');
+        await enforceAccessControl(pepContract, 'alice.smith', 'read', 'salaryPanel');
 
-        // Get the smart contract from the network.
-        const contract = network.getContract(chaincodeName);
+        const pdpContract = await getContractInstance(gateway, channelName, 'chaincodePDP');
+        const policyResult = await evaluatePolicy(pdpContract, { subject: 'alice.smith', action: 'read', resource: 'salaryPanel' });
 
-        // Enforce an access control decision
-        await enforceAccessControl(contract, 'jane.doe', 'read', 'userPanel');
+        const pipContract = await getContractInstance(gateway, channelName, 'chaincodePIP');
+        const roleData = await getRole(pipContract, 'alice.smith');
+
+        const papContract = await getContractInstance(gateway, channelName, 'chaincodePAP');
+        await addPolicy(papContract, 'newPolicyIdAnotherUltimate', "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Policy xmlns=\"urn:oasis:names:tc:xacml:3.0:core:schema:wd-17\"\n        PolicyId=\"AdminWriteAccessPolicy\"\n        RuleCombiningAlgId=\"urn:oasis:names:tc:xacml:1.0:rule-combining-algorithm:first-applicable\"\n        Version=\"1.0\">\n    <Description>\n        Policy to grant write access to the admin panel for users with the admin role.\n    </Description>\n    <Target>\n        <!-- Define the applicable resource and action -->\n        <Resources>\n            <Resource>\n                <ResourceMatch MatchId=\"urn:oasis:names:tc:xacml:1.0:function:string-equal\">\n                    <AttributeValue DataType=\"http://www.w3.org/2001/XMLSchema#string\">adminPanel</AttributeValue>\n                    <ResourceAttributeDesignator AttributeId=\"urn:oasis:names:tc:xacml:1.0:resource:resource-id\"\n                                                 DataType=\"http://www.w3.org/2001/XMLSchema#string\"/>\n                </ResourceMatch>\n            </Resource>\n        </Resources>\n        <Actions>\n            <Action>\n                <ActionMatch MatchId=\"urn:oasis:names:tc:xacml:1.0:function:string-equal\">\n                    <AttributeValue DataType=\"http://www.w3.org/2001/XMLSchema#string\">write</AttributeValue>\n                    <ActionAttributeDesignator AttributeId=\"urn:oasis:names:tc:xacml:1.0:action:action-id\"\n                                               DataType=\"http://www.w3.org/2001/XMLSchema#string\"/>\n                </ActionMatch>\n            </Action>\n        </Actions>\n    </Target>\n    <Rule RuleId=\"GrantWriteToAdmin\"\n          Effect=\"Permit\">\n        <Description>\n            Grant write access if the user has the admin role.\n        </Description>\n        <Target>\n            <Subjects>\n                <Subject>\n                    <SubjectMatch MatchId=\"urn:oasis:names:tc:xacml:1.0:function:string-equal\">\n                        <AttributeValue DataType=\"http://www.w3.org/2001/XMLSchema#string\">admin</AttributeValue>\n                        <SubjectAttributeDesignator AttributeId=\"urn:oasis:names:tc:xacml:1.0:subject:subject-role-id\"\n                                                    DataType=\"http://www.w3.org/2001/XMLSchema#string\"/>\n                    </SubjectMatch>\n                </Subject>\n            </Subjects>\n        </Target>\n    </Rule>\n    <!-- Default Deny Rule -->\n    <Rule RuleId=\"DefaultDeny\"\n          Effect=\"Deny\"/>\n</Policy>");
+
+        const policies = await getAllPolicies(papContract);
+
     } finally {
         gateway.close();
         client.close();
@@ -143,6 +137,11 @@ async function newSigner() {
     return signers.newPrivateKeySigner(privateKey);
 }
 
+async function getContractInstance(gateway, channelName, chaincodeName) {
+    const network = await gateway.getNetwork(channelName);
+    return network.getContract(chaincodeName);
+}
+
 async function enforceAccessControl(contract, subject, action, resource) {
     console.log(`\n--> Submit Transaction: Enforce, checks access for subject=${subject}, action=${action}, resource=${resource}`);
     const result = await contract.submitTransaction('enforce', subject, action, resource);
@@ -150,13 +149,42 @@ async function enforceAccessControl(contract, subject, action, resource) {
     console.log(`*** Decision: ${resultString}`);
 }
 
+async function evaluatePolicy(contract, request) {
+    console.log(`Evaluating policy with request: ${JSON.stringify(request)}`);
+    const result = await contract.evaluateTransaction('evaluate', JSON.stringify(request));
+    console.log(`Policy evaluation result: ${result.toString()}`);
+    return result.toString();
+}
+
+async function getRole(contract, username) {
+    console.log(`Getting role for username: ${username}`);
+    const roleData = await contract.evaluateTransaction('getRole', username);
+    console.log(`Role data: ${roleData.toString()}`);
+    return roleData.toString();
+}
+
+async function addPolicy(contract, policyId, policyXml) {
+    console.log(`Adding policy with ID: ${policyId}`);
+    await contract.submitTransaction('addPolicy', policyId, policyXml);
+    console.log(`Policy ${policyId} added successfully.`);
+}
+
+async function getAllPolicies(contract) {
+    console.log(`Fetching all policies from the ledger`);
+    const result = await contract.evaluateTransaction('getAllPolicies');
+    const policies = JSON.parse(utf8Decoder.decode(result));
+    console.log(`All Policies: ${JSON.stringify(policies, null, 2)}`);
+    return policies;
+}
+
+
 function envOrDefault(key, defaultValue) {
     return process.env[key] || defaultValue;
 }
 
 function displayInputParameters() {
     console.log(`channelName:       ${channelName}`);
-    console.log(`chaincodeName:     ${chaincodeName}`);
+    console.log(`chaincodeName:     not applicable - multiple chaincodes`);
     console.log(`mspId:             ${mspId}`);
     console.log(`cryptoPath:        ${cryptoPath}`);
     console.log(`keyDirectoryPath:  ${keyDirectoryPath}`);
