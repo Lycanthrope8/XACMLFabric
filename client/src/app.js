@@ -1,9 +1,3 @@
-/*
- * Copyright IBM Corp. All Rights Reserved.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 const grpc = require('@grpc/grpc-js');
 const { connect, signers } = require('@hyperledger/fabric-gateway');
 const crypto = require('crypto');
@@ -67,18 +61,18 @@ const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', 'peer0.org1.example.com');
 
 const utf8Decoder = new TextDecoder();
 
+
 async function main() {
     displayInputParameters();
-
     const client = await newGrpcConnection();
     const gateway = connect({
         client,
         identity: await newIdentity(),
         signer: await newSigner(),
-        evaluateOptions: () => ({ deadline: Date.now() + 5000 }), // 5 seconds
-        endorseOptions: () => ({ deadline: Date.now() + 15000 }), // 15 seconds
-        submitOptions: () => ({ deadline: Date.now() + 5000 }), // 5 seconds
-        commitStatusOptions: () => ({ deadline: Date.now() + 60000 }) // 1 minute
+        evaluateOptions: () => ({ deadline: Date.now() + 5000 }),
+        endorseOptions: () => ({ deadline: Date.now() + 15000 }),
+        submitOptions: () => ({ deadline: Date.now() + 5000 }),
+        commitStatusOptions: () => ({ deadline: Date.now() + 60000 })
     });
 
     try {
@@ -89,12 +83,13 @@ async function main() {
         const policyResult = await evaluatePolicy(pdpContract, { subject: 'alice.smith', action: 'read', resource: 'salaryPanel' });
 
         const pipContract = await getContractInstance(gateway, channelName, 'chaincodePIP');
-        const roleData = await getRole(pipContract, 'alice.smith');
+        await setRole(pipContract, 'abc', 'teacher');
+        const roleData = await getRole(pipContract, 'abc');
 
         const papContract = await getContractInstance(gateway, channelName, 'chaincodePAP');
-        await addPolicy(papContract, 'newPolicyIdAnotherUltimate', "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Policy xmlns=\"urn:oasis:names:tc:xacml:3.0:core:schema:wd-17\"\n        PolicyId=\"AdminWriteAccessPolicy\"\n        RuleCombiningAlgId=\"urn:oasis:names:tc:xacml:1.0:rule-combining-algorithm:first-applicable\"\n        Version=\"1.0\">\n    <Description>\n        Policy to grant write access to the admin panel for users with the admin role.\n    </Description>\n    <Target>\n        <!-- Define the applicable resource and action -->\n        <Resources>\n            <Resource>\n                <ResourceMatch MatchId=\"urn:oasis:names:tc:xacml:1.0:function:string-equal\">\n                    <AttributeValue DataType=\"http://www.w3.org/2001/XMLSchema#string\">adminPanel</AttributeValue>\n                    <ResourceAttributeDesignator AttributeId=\"urn:oasis:names:tc:xacml:1.0:resource:resource-id\"\n                                                 DataType=\"http://www.w3.org/2001/XMLSchema#string\"/>\n                </ResourceMatch>\n            </Resource>\n        </Resources>\n        <Actions>\n            <Action>\n                <ActionMatch MatchId=\"urn:oasis:names:tc:xacml:1.0:function:string-equal\">\n                    <AttributeValue DataType=\"http://www.w3.org/2001/XMLSchema#string\">write</AttributeValue>\n                    <ActionAttributeDesignator AttributeId=\"urn:oasis:names:tc:xacml:1.0:action:action-id\"\n                                               DataType=\"http://www.w3.org/2001/XMLSchema#string\"/>\n                </ActionMatch>\n            </Action>\n        </Actions>\n    </Target>\n    <Rule RuleId=\"GrantWriteToAdmin\"\n          Effect=\"Permit\">\n        <Description>\n            Grant write access if the user has the admin role.\n        </Description>\n        <Target>\n            <Subjects>\n                <Subject>\n                    <SubjectMatch MatchId=\"urn:oasis:names:tc:xacml:1.0:function:string-equal\">\n                        <AttributeValue DataType=\"http://www.w3.org/2001/XMLSchema#string\">admin</AttributeValue>\n                        <SubjectAttributeDesignator AttributeId=\"urn:oasis:names:tc:xacml:1.0:subject:subject-role-id\"\n                                                    DataType=\"http://www.w3.org/2001/XMLSchema#string\"/>\n                    </SubjectMatch>\n                </Subject>\n            </Subjects>\n        </Target>\n    </Rule>\n    <!-- Default Deny Rule -->\n    <Rule RuleId=\"DefaultDeny\"\n          Effect=\"Deny\"/>\n</Policy>");
-
-        const policies = await getAllPolicies(papContract);
+        await addPolicy(papContract, 'newPolicyId', "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Policy xmlns=\"urn:oasis:names:tc:xacml:3.0:core:schema:wd-17\"\n        PolicyId=\"AdminWriteAccessPolicy\"\n        RuleCombiningAlgId=\"urn:oasis:names:tc:xacml:1.0:rule-combining-algorithm:first-applicable\"\n        Version=\"1.0\">\n    <Description>\n        Policy to grant write access to the admin panel for users with the admin role.\n    </Description>\n    <Target>\n        <!-- Define the applicable resource and action -->\n        <Resources>\n            <Resource>\n                <ResourceMatch MatchId=\"urn:oasis:names:tc:xacml:1.0:function:string-equal\">\n                    <AttributeValue DataType=\"http://www.w3.org/2001/XMLSchema#string\">userPanel</AttributeValue>\n                    <ResourceAttributeDesignator AttributeId=\"urn:oasis:names:tc:xacml:1.0:resource:resource-id\"\n                                                 DataType=\"http://www.w3.org/2001/XMLSchema#string\"/>\n                </ResourceMatch>\n            </Resource>\n        </Resources>\n        <Actions>\n            <Action>\n                <ActionMatch MatchId=\"urn:oasis:names:tc:xacml:1.0:function:string-equal\">\n                    <AttributeValue DataType=\"http://www.w3.org/2001/XMLSchema#string\">read</AttributeValue>\n                    <ActionAttributeDesignator AttributeId=\"urn:oasis:names:tc:xacml:1.0:action:action-id\"\n                                               DataType=\"http://www.w3.org/2001/XMLSchema#string\"/>\n                </ActionMatch>\n            </Action>\n        </Actions>\n    </Target>\n    <Rule RuleId=\"GrantWriteToAdmin\"\n          Effect=\"Permit\">\n        <Description>\n            Grant write access if the user has the admin role.\n        </Description>\n        <Target>\n            <Subjects>\n                <Subject>\n                    <SubjectMatch MatchId=\"urn:oasis:names:tc:xacml:1.0:function:string-equal\">\n                        <AttributeValue DataType=\"http://www.w3.org/2001/XMLSchema#string\">user</AttributeValue>\n                        <SubjectAttributeDesignator AttributeId=\"urn:oasis:names:tc:xacml:1.0:subject:subject-role-id\"\n                                                    DataType=\"http://www.w3.org/2001/XMLSchema#string\"/>\n                    </SubjectMatch>\n                </Subject>\n            </Subjects>\n        </Target>\n    </Rule>\n    <!-- Default Deny Rule -->\n    <Rule RuleId=\"DefaultDeny\"\n          Effect=\"Deny\"/>\n</Policy>");
+        const policy = await getPolicy(papContract, 'newPolicyId');
+        const allPolicies = await getAllPolicies(papContract);
 
     } finally {
         gateway.close();
@@ -152,16 +147,26 @@ async function enforceAccessControl(contract, subject, action, resource) {
 async function evaluatePolicy(contract, request) {
     console.log(`Evaluating policy with request: ${JSON.stringify(request)}`);
     const result = await contract.evaluateTransaction('evaluate', JSON.stringify(request));
-    console.log(`Policy evaluation result: ${result.toString()}`);
-    return result.toString();
+    const readableResult = utf8Decoder.decode(result); // Decoding buffer to string
+    console.log(`Policy evaluation result: ${readableResult}`);
+    return readableResult;
+}
+
+
+async function setRole(contract, username, roles) {
+    console.log(`Setting roles for ${username}`);
+    await contract.submitTransaction('setRole', username, roles);
+    console.log(`Roles set for ${username}`);
 }
 
 async function getRole(contract, username) {
-    console.log(`Getting role for username: ${username}`);
-    const roleData = await contract.evaluateTransaction('getRole', username);
-    console.log(`Role data: ${roleData.toString()}`);
-    return roleData.toString();
+    console.log(`Fetching role for ${username}`);
+    const result = await contract.evaluateTransaction('getRole', username);
+    const readableResult = utf8Decoder.decode(result); // Decoding buffer to string
+    console.log(`Role data for ${username}: ${readableResult}`);
+    return readableResult;
 }
+
 
 async function addPolicy(contract, policyId, policyXml) {
     console.log(`Adding policy with ID: ${policyId}`);
@@ -169,12 +174,21 @@ async function addPolicy(contract, policyId, policyXml) {
     console.log(`Policy ${policyId} added successfully.`);
 }
 
+async function getPolicy(contract, policyId) {
+    console.log(`Fetching policy with ID: ${policyId}`);
+    const result = await contract.evaluateTransaction('getPolicy', policyId);
+    const readableResult = utf8Decoder.decode(result); // Decoding buffer to string
+    console.log(`Policy data: ${readableResult}`);
+    return readableResult;
+}
+
+
 async function getAllPolicies(contract) {
-    console.log(`Fetching all policies from the ledger`);
+    console.log(`Fetching all policies`);
     const result = await contract.evaluateTransaction('getAllPolicies');
-    const policies = JSON.parse(utf8Decoder.decode(result));
-    console.log(`All Policies: ${JSON.stringify(policies, null, 2)}`);
-    return policies;
+    const readableResult = utf8Decoder.decode(result); // Decoding buffer to string
+    console.log(`All Policies: ${readableResult}`);
+    return readableResult;
 }
 
 
@@ -183,13 +197,12 @@ function envOrDefault(key, defaultValue) {
 }
 
 function displayInputParameters() {
-    console.log(`channelName:       ${channelName}`);
-    console.log(`chaincodeName:     not applicable - multiple chaincodes`);
-    console.log(`mspId:             ${mspId}`);
-    console.log(`cryptoPath:        ${cryptoPath}`);
-    console.log(`keyDirectoryPath:  ${keyDirectoryPath}`);
-    console.log(`certDirectoryPath: ${certDirectoryPath}`);
-    console.log(`tlsCertPath:       ${tlsCertPath}`);
-    console.log(`peerEndpoint:      ${peerEndpoint}`);
-    console.log(`peerHostAlias:     ${peerHostAlias}`);
+    console.log(`Channel Name:       ${channelName}`);
+    console.log(`MSP ID:             ${mspId}`);
+    console.log(`Crypto Path:        ${cryptoPath}`);
+    console.log(`Key Directory Path: ${keyDirectoryPath}`);
+    console.log(`Cert Directory Path: ${certDirectoryPath}`);
+    console.log(`TLS Cert Path:       ${tlsCertPath}`);
+    console.log(`Peer Endpoint:      ${peerEndpoint}`);
+    console.log(`Peer Host Alias:     ${peerHostAlias}`);
 }
