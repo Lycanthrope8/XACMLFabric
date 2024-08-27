@@ -6,19 +6,26 @@ document.addEventListener("DOMContentLoaded", function() {
                   const formData = new FormData(form);
                   const url = form.getAttribute('action');
                   const method = form.getAttribute('method');
+      
+                  // Find the existing response container or create a new one
+                  let respContainer = form.querySelector('.response');
+                  if (!respContainer) {
+                      respContainer = document.createElement('div');
+                      respContainer.className = 'response';
+                      form.appendChild(respContainer);
+                  }
+      
                   const request = new XMLHttpRequest();
                   request.open(method, url, true);
                   request.onload = function() {
                       if (request.status >= 200 && request.status < 400) {
-                          const resp = document.createElement('div');
-                          resp.textContent = 'Response: ' + request.responseText;
-                          form.appendChild(resp);
+                          respContainer.textContent = 'Response: ' + request.responseText;
                       } else {
-                          console.error('Error from the server');
+                          respContainer.textContent = 'Server error. Please try again.';
                       }
                   };
                   request.onerror = function() {
-                      console.error('Error making the request');
+                      respContainer.textContent = 'Request failed. Please check your connection.';
                   };
                   request.send(new URLSearchParams(formData));
               });
