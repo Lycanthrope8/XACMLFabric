@@ -60,6 +60,9 @@ app.post('/getRole', async (req, res) => {
 app.post('/addPolicy', async (req, res) => {
     try {
         const { policyId, policyXml } = req.body;
+        console.log(typeof policyXml);
+        console.log("indexjs er cl: ", typeof policyXml.toString('utf-8'));
+        // console.log(JSON.parse(JSON.stringify(policyXml)));
         await fabricFunctions.addPolicy(policyId, policyXml);
         res.send(`Policy added successfully with ID: ${policyId}`);
     } catch (error) {

@@ -67,15 +67,12 @@ class PAPChaincode extends Contract {
                 // Parse each record into a readable format
                 const Key = res.value.key;
                 const Record = res.value.value.toString('utf8');
+                console.log("RECORD: ",Record);
                 result.push({ Key, Record });
             }
         }
-    
-        // Convert the result array into a JSON string
-        console.log("result type:", typeof result);
-        const jsonResult = JSON.stringify(result);
-        console.log("Final JSON to return:", jsonResult);
-        return jsonResult;  // Return the JSON string
+        
+        return result;
     }
     
     
