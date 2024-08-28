@@ -29,6 +29,7 @@ class PIPChaincode extends Contract {
         }
     }
 
+    
     async setRole(ctx, username, roles) {
         console.log(`Setting role for ${username}`);
         const attributesKey = `attribute_${username}`;

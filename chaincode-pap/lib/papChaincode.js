@@ -31,6 +31,7 @@ class PAPChaincode extends Contract {
     }
 
     async addPolicy(ctx, policyId, policyXml) {
+        
         console.log(`Adding policy ${policyId}`);
         const policyKey = `policy_${policyId}`;
         await ctx.stub.putState(policyKey, Buffer.from(policyXml));

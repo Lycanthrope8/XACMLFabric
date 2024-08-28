@@ -56,8 +56,9 @@ class PDPChaincode extends Contract {
             console.error('No roles data available');
             return false;
         }
+        console.log(`RolesData for ${request.subject}: ${rolesData}`); //RolesData =  {"role":["management","admin","user"]}
         const roles = JSON.parse(rolesData).role;
-    
+        console.log(`Roles for ${request.subject}: ${roles}`);
         // Access paths adjusted for Subjects at the rule level and Actions, Resources at the policy level
         const subjectMatches = rule.Target?.[0]?.Subjects?.[0]?.Subject?.[0]?.SubjectMatch;
         const actionMatches = policy.Target?.[0]?.Actions?.[0]?.Action?.[0]?.ActionMatch;
@@ -147,7 +148,7 @@ class PDPChaincode extends Contract {
 
     async getRolesFromPipChaincode(stub, username) {
         // console.log("Stub in getRolesFromPipChaincode: ", stub);
-        console.log(`Getting roles for ${username}`);
+        // console.log(`Getting roles for ${username}`);
         const pipChaincodeName = 'chaincodePIP';
         const functionName = 'getRole';
         try {
@@ -161,7 +162,7 @@ class PDPChaincode extends Contract {
                 console.error(`No roles found for ${username}`);
                 return '{}';  // Return an empty object in string format if no roles are found
             }
-            console.log(`Roles for ${username}: ${rolesData}`);
+            // console.log(`Roles for ${username}: ${rolesData}`);
             return rolesData;
         } catch (err) {
             console.error(`Error getting roles from PIP chaincode for ${username}: ${err.message}`);
